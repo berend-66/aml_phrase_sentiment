@@ -1,3 +1,4 @@
+import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 class TFIDF:
@@ -13,4 +14,6 @@ class TFIDF:
       use_idf=True                  # Use inverse document frequency
     )
 
-    return tfidf_vectorizer.fit_transform(data)
+    tfidf_matrix = tfidf_vectorizer.fit_transform(data)
+
+    return pd.DataFrame(tfidf_matrix.toarray(), columns=tfidf_vectorizer.get_feature_names_out())

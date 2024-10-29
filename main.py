@@ -76,5 +76,6 @@ X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
 
 # Principle Component Analysis
 pca = PrincipalComponentAnalysis(10)
-X_train_clean_pca = pca.fit(X_train_clean_bag)
+X_train_clean_bag_pca = pca.fit(X_train_clean_bag)
+X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
 # pca.elbow_graph()
