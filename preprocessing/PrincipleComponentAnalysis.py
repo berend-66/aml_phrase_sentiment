@@ -34,6 +34,10 @@ class PrincipleComponentAnalysis:
     def explained_variance(self):
         return self.pca.explained_variance_ratio_
 
+    def elbow_graph(self):
+      explained_variance_ratio = self.explained_variance()
+      plt.plot(range(1, len(explained_variance_ratio) + 1), explained_variance_ratio, marker='o')
+
     def fit(self, X, y):
         X_pca = self.fit_transform(X, y)
         return pd.DataFrame(X_pca, columns=[f"PC{i+1}" for i in range(self.n_components)])
