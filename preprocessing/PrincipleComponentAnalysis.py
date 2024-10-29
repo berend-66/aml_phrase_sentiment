@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.prepocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 class PrincipleComponentAnalysis:
@@ -24,20 +24,20 @@ class PrincipleComponentAnalysis:
     self.scaler = StandardScaler
     self.pca = PCA(n_components=n_components)
 
-   def fit_transform(self, X, y):
-        X_standardized = self.scaler.fit_transform(X) # standardize to avoid large vars dominating small vars
-        X_combined = pd.concat([pd.DataFrame(X_standardized), pd.DataFrame(y, columns=['Outcome'])], axis=1)
-        X_pca = self.pca.fit_transform(X_combined) # apply dimensionality reduction
-        
-        return X_pca
+  def fit_transform(self, X, y):
+    X_standardized = self.scaler.fit_transform(X) # standardize to avoid large vars dominating small vars
+    X_combined = pd.concat([pd.DataFrame(X_standardized), pd.DataFrame(y, columns=['Outcome'])], axis=1)
+    X_pca = self.pca.fit_transform(X_combined) # apply dimensionality reduction
     
-    def explained_variance(self):
-        return self.pca.explained_variance_ratio_
+    return X_pca
+    
+  def explained_variance(self):
+    return self.pca.explained_variance_ratio_
 
-    def elbow_graph(self):
-      explained_variance_ratio = self.explained_variance()
-      plt.plot(range(1, len(explained_variance_ratio) + 1), explained_variance_ratio, marker='o')
+  def elbow_graph(self):
+    explained_variance_ratio = self.explained_variance()
+    plt.plot(range(1, len(explained_variance_ratio) + 1), explained_variance_ratio, marker='o')
 
-    def fit(self, X, y):
-        X_pca = self.fit_transform(X, y)
-        return pd.DataFrame(X_pca, columns=[f"PC{i+1}" for i in range(self.n_components)])
+  def fit(self, X, y):
+    X_pca = self.fit_transform(X, y)
+    return pd.DataFrame(X_pca, columns=[f"PC{i+1}" for i in range(self.n_components)])

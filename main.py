@@ -16,17 +16,14 @@ import torch.nn.functional as F
 import math
 
 from sklearn.metrics import r2_score
-import string
-import nltk
-from nltk.corpus import stopwords
-from nltk.corpus import wordnet as wn
-from nltk.stem import WordNetLemmatizer, PorterStemmer
-import re
+
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, TfidfTransformer
 from sklearn.linear_model import LogisticRegression
 
 # import classes
+from preprocessing.PrincipleComponentAnalysis import PrincipleComponentAnalysis
+from preprocessing.PreProcess import PreProcess
 
 train_data = pd.read_csv('data/train.csv')
 val_data = pd.read_csv('data/val.csv')
@@ -52,3 +49,16 @@ print(f"Train Data Shape: {X_train.shape}")
 print(f"Cleaned Train Data Shape: {train_data_clean['Phrase'].shape}")
 print(f"Validation Data Shape: {X_val.shape}")
 print(f"Test Data Shape: {X_test.shape}")
+
+# --- Preprocessing Data ---
+pre_processor = PreProcess()
+
+X_train_preprocess = pre_processor.process(X_train)
+X_train_clean_preprocess = pre_processor.process(X_train_clean)
+X_val_preprocess = pre_processor.process(X_val)
+X_test_preprocess = pre_processor.process(X_test)
+
+# Bag of Words
+
+# PCA
+pca = PrincipleComponentAnalysis(10)
