@@ -5,6 +5,9 @@ from nltk.corpus import wordnet as wn
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 import re
 
+nltk.download('stopwords')
+nltk.download('wordnet')
+
 class PreProcess:
   def process(self, data):
     prepocess_data = data.copy()
@@ -14,12 +17,10 @@ class PreProcess:
     mapping = str.maketrans("", "", punctuation)
     prepocess_data = prepocess_data.str.translate(mapping)
 
-    nltk.download('stopwords') # remove stopwords
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(stopwords.words('english')) # remove stopwords
     prepocess_data = prepocess_data.apply(lambda text: ' '.join([word for word in str(text).split() if word.lower() not in stop_words]))
 
-    nltk.download('wordnet') # lemmatize
-    lemmatizer = WordNetLemmatizer()
+    lemmatizer = WordNetLemmatizer() # lemmatize
     prepocess_data = prepocess_data.apply(lambda text: ' '.join([lemmatizer.lemmatize(word) for word in text.split()]))
     prepocess_data = prepocess_data.apply(lambda text: re.sub(r'@\w+', '', re.sub(r'http\S+|www\S+', '', text)))
 

@@ -22,8 +22,9 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, Tf
 from sklearn.linear_model import LogisticRegression
 
 # import classes
-from preprocessing.PrincipleComponentAnalysis import PrincipleComponentAnalysis
+from preprocessing.PrincipalComponentAnalysis import PrincipalComponentAnalysis
 from preprocessing.PreProcess import PreProcess
+from preprocessing.BagOfWords import BagOfWords
 
 train_data = pd.read_csv('data/train.csv')
 val_data = pd.read_csv('data/val.csv')
@@ -45,10 +46,10 @@ y_val = val_data['Sentiment']
 # Test Data
 X_test = test_data['Phrase']
 
-print(f"Train Data Shape: {X_train.shape}")
-print(f"Cleaned Train Data Shape: {train_data_clean['Phrase'].shape}")
-print(f"Validation Data Shape: {X_val.shape}")
-print(f"Test Data Shape: {X_test.shape}")
+# print(f"Train Data Shape: {X_train.shape}")
+# print(f"Cleaned Train Data Shape: {train_data_clean['Phrase'].shape}")
+# print(f"Validation Data Shape: {X_val.shape}")
+# print(f"Test Data Shape: {X_test.shape}")
 
 # --- Preprocessing Data ---
 pre_processor = PreProcess()
@@ -59,6 +60,16 @@ X_val_preprocess = pre_processor.process(X_val)
 X_test_preprocess = pre_processor.process(X_test)
 
 # Bag of Words
+combined_data = pd.concat([X_train_preprocess, X_val_preprocess, X_test_preprocess])
+bag = BagOfWords(combined_data)
 
-# PCA
-pca = PrincipleComponentAnalysis(10)
+n = 10
+X_train = bag.bag_of_words(X_train_preprocess, threshold_m=n)
+X_train_clean = bag.bag_of_words(X_train_clean_preprocess, threshold_m=n)
+X_val = bag.bag_of_words(X_val_preprocess, threshold_m=n)
+X_test = bag.bag_of_words(X_test_preprocess, threshold_m=n)
+
+# Principle Component Analysis
+pca = PrincipalComponentAnalysis(10)
+X_pca = pca.fit(X_train_clean)
+pca.elbow_graph()
