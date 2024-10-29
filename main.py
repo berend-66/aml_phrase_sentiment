@@ -26,6 +26,9 @@ from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, TfidfTransformer
 from sklearn.linear_model import LogisticRegression
 
+# import classes
+
+
 train_data = pd.read_csv('data/train.csv')
 val_data = pd.read_csv('data/val.csv')
 test_data = pd.read_csv('data/test.csv')
