@@ -10,21 +10,23 @@ nltk.download('wordnet')
 
 class PreProcess:
   def process(self, data):
-    prepocess_data = data.copy()
-    prepocess_data = prepocess_data.str.lower() # lowercase letters
+    preprocess_data = data.copy()
+    preprocess_data = preprocess_data.str.lower() # lowercase letters
+
+    preprocess_data = preprocess_data.replace(r'@\w+|http\S+', '', regex=True) # replace @ and https
 
     punctuation = string.punctuation # remove punctuation
     mapping = str.maketrans("", "", punctuation)
-    prepocess_data = prepocess_data.str.translate(mapping)
+    preprocess_data = preprocess_data.str.translate(mapping)
 
     stop_words = set(stopwords.words('english')) # remove stopwords
-    prepocess_data = prepocess_data.apply(lambda text: ' '.join([word for word in str(text).split() if word.lower() not in stop_words]))
+    preprocess_data = preprocess_data.apply(lambda text: ' '.join([word for word in str(text).split() if word.lower() not in stop_words]))
 
     lemmatizer = WordNetLemmatizer() # lemmatize
-    prepocess_data = prepocess_data.apply(lambda text: ' '.join([lemmatizer.lemmatize(word) for word in text.split()]))
-    prepocess_data = prepocess_data.apply(lambda text: re.sub(r'@\w+', '', re.sub(r'http\S+|www\S+', '', text)))
+    preprocess_data = preprocess_data.apply(lambda text: ' '.join([lemmatizer.lemmatize(word) for word in text.split()]))
+    preprocess_data = preprocess_data.apply(lambda text: re.sub(r'@\w+', '', re.sub(r'http\S+|www\S+', '', text)))
 
-    return prepocess_data
+    return preprocess_data
 
 
   def clean(self, text):

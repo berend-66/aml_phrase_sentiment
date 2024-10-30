@@ -18,14 +18,16 @@ import math
 from sklearn.metrics import r2_score
 
 from collections import Counter
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, TfidfTransformer
-from sklearn.linear_model import LogisticRegression
+
+# packages
+from sklearn.metrics import mean_squared_error, r2_score, f1_score
 
 # import classes
 from preprocessing.PrincipalComponentAnalysis import PrincipalComponentAnalysis
 from preprocessing.PreProcess import PreProcess
 from preprocessing.BagOfWords import BagOfWords
 from preprocessing.TFIDF import TFIDF
+from supervised.LinearRegression import LinearRegression
 
 train_data = pd.read_csv('data/train.csv')
 val_data = pd.read_csv('data/val.csv')
@@ -60,22 +62,26 @@ X_train_clean_preprocess = pre_processor.process(X_train_clean)
 X_val_preprocess = pre_processor.process(X_val)
 X_test_preprocess = pre_processor.process(X_test)
 
-# Bag of Words
 combined_data = pd.concat([X_train_preprocess, X_val_preprocess, X_test_preprocess])
-bag = BagOfWords(combined_data)
+bag = BagOfWords(combined_data) # Bag of Words
 
-n = 10
+n = 3000
 X_train_bag = bag.bag_of_words(X_train_preprocess, threshold_m=n)
 X_train_clean_bag = bag.bag_of_words(X_train_clean_preprocess, threshold_m=n)
 X_val_bag = bag.bag_of_words(X_val_preprocess, threshold_m=n)
 X_test_bag = bag.bag_of_words(X_test_preprocess, threshold_m=n)
 
-# TF-IDF
-tfidf = TFIDF()
+tfidf = TFIDF() # TF-IDF
 X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
 
-# Principle Component Analysis
-pca = PrincipalComponentAnalysis(10)
+pca = PrincipalComponentAnalysis(125) # Principle Component Analysis
 X_train_clean_bag_pca = pca.fit(X_train_clean_bag)
 X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
 # pca.elbow_graph()
+
+# --- Supervised Learning ---
+lr = LinearRegression() # Linear Regression
+lr.fit(X_train_clean_bag_pca, y_train_clean)
+prediction = lr.predict(X_train_clean_bag_pca)
+print("LINEAR REGRESSION")
+print(f1_score(y_train_clean, prediction, average='weighted'))
