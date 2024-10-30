@@ -1,25 +1,6 @@
 # import packages
-
-import os
-import sklearn
-import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-
-from sklearn.linear_model import LinearRegression as sk_OLS
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.model_selection import train_test_split
-
-import torch
-import torch.nn.functional as F
-import math
-
-from sklearn.metrics import r2_score
-
-from collections import Counter
-
-# packages
+import numpy as np
 from sklearn.metrics import mean_squared_error, r2_score, f1_score
 
 # import classes
@@ -27,6 +8,9 @@ from preprocessing.PrincipalComponentAnalysis import PrincipalComponentAnalysis
 from preprocessing.PreProcess import PreProcess
 from preprocessing.BagOfWords import BagOfWords
 from preprocessing.TFIDF import TFIDF
+
+from unsupervised.GaussianMixture import GaussianMixture
+
 from supervised.LinearRegression import LinearRegression
 
 train_data = pd.read_csv('data/train.csv')
@@ -73,15 +57,22 @@ X_test_bag = bag.bag_of_words(X_test_preprocess, threshold_m=n)
 
 tfidf = TFIDF() # TF-IDF
 X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
+X_train_tfidf = tfidf.fit(X_train_preprocess)
 
 pca = PrincipalComponentAnalysis(125) # Principle Component Analysis
+X_train_bag_pca = pca.fit(X_train_bag)
 X_train_clean_bag_pca = pca.fit(X_train_clean_bag)
+X_train_tfidf_pca = pca.fit(X_train_tfidf)
 X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
-# pca.elbow_graph()
+
+# --- Unsupervised Learning ---
+gm = GaussianMixture(2) # Gaussian Mixture
+gm.fit(X_train_clean_tfidf_pca)
+predictions = gm.predict(X_train_clean_tfidf_pca)
 
 # --- Supervised Learning ---
 lr = LinearRegression() # Linear Regression
 lr.fit(X_train_clean_bag_pca, y_train_clean)
-prediction = lr.predict(X_train_clean_bag_pca)
+predictions = lr.predict(X_train_clean_bag_pca)
 print("LINEAR REGRESSION")
-print(f1_score(y_train_clean, prediction, average='weighted'))
+print(f1_score(y_train_clean, predictions, average='weighted'))
