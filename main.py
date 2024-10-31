@@ -3,16 +3,20 @@ import os
 import pandas as pd
 import numpy as np
 from IPython.display import display
-from sklearn.metrics import mean_squared_error, r2_score, f1_score
+from sklearn.metrics import accuracy_score
 from joblib import dump, load
+import warnings
+
+# Ignore FutureWarning messages
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # import classes
 from preprocessing.PrincipalComponentAnalysis import PrincipalComponentAnalysis
-from preprocessing.PreProcess import PreProcess
 from preprocessing.BagOfWords import BagOfWords
 from preprocessing.TFIDF import TFIDF
 
 from unsupervised.GaussianMixture import GaussianMixture
+from unsupervised.KMeans import KMeans
 
 from supervised.LogisticRegression import LogisticRegression
 from supervised.KNN import KNN
@@ -50,6 +54,8 @@ if os.path.exists(preprocessed_train_path): # load data
   X_test_preprocess = pd.read_csv(preprocessed_test_path)['Phrase'].fillna('')
   print("** Preprocessed Data Loaded from Files **")
 else:
+  from preprocessing.PreProcess import PreProcess
+
   pre_processor = PreProcess()
   X_train_preprocess = X_train.apply(pre_processor.process)
   X_train_clean_preprocess = X_train_clean.apply(pre_processor.process)
@@ -123,6 +129,40 @@ y_train_bag_gmm[unlabeled_indices] = labels[unlabeled_indices]
 
 print("** GMM Completed **")
 
+kmeans = KMeans(n_clusters=5, random_state=0) # K-Means
+
+### TF-IDF -> KMeans ###
+kmeans_tfidf_model_path = 'models/kmeans_tfidf_model.joblib'
+if os.path.exists(kmeans_tfidf_model_path): # load model
+  kmeans = load(kmeans_tfidf_model_path)
+  print("** KMeans model loaded from file **")
+else: # train model
+  kmeans.fit(X_train_tfidf)
+  dump(kmeans, kmeans_tfidf_model_path)
+  print("** KMeans model trained and saved to file **")
+
+labels = kmeans.predict(X_train_tfidf).values.flatten()
+
+unlabeled_indices = np.where(y_train == -100)[0] # Indices of unlabeled data
+y_train_tfidf_kmeans = y_train.copy()
+y_train_tfidf_kmeans[unlabeled_indices] = labels[unlabeled_indices]
+
+### Bag of Words -> KMeans ###
+kmeans_bag_model_path = 'models/kmeans_bag_model.joblib'
+if os.path.exists(kmeans_bag_model_path): # load model
+  kmeans = load(kmeans_bag_model_path)
+  print("** KMeans model loaded from file **")
+else: # train model
+  kmeans.fit(X_train_bag)
+  dump(kmeans, kmeans_bag_model_path)
+  print("** KMeans model trained and saved to file **")
+
+labels = kmeans.predict(X_train_bag).values.flatten()
+
+unlabeled_indices = np.where(y_train == -100)[0] # Indices of unlabeled data
+y_train_bag_kmeans = y_train.copy()
+y_train_bag_kmeans[unlabeled_indices] = labels[unlabeled_indices]
+
 # --- Supervised Learning --- #
 
 logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced') # Logistic Regression
@@ -136,9 +176,9 @@ else:
   logr.fit(X_train_clean_tfidf, y_train_clean)
   dump(logr, logr_tfidf_model_path)
   print("** Logistic Regression model trained and saved to file **") 
-predictions = logr.predict(X_train_clean_tfidf)
+predictions = logr.predict(X_val_tfidf)
 print("LOGISTIC REGRESSION (TF-IDF)")
-print(f1_score(y_train_clean, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
 
 ### Bag of Words -> Logistic Regression ###
 logr_bag_model_path = 'models/logr_bag_model'
@@ -149,9 +189,9 @@ else:
   logr.fit(X_train_clean_bag, y_train_clean)
   dump(logr, logr_bag_model_path)
   print("** Logistic Regression model trained and saved to file **")
-predictions = logr.predict(X_train_clean_bag)
+predictions = logr.predict(X_val_bag)
 print("LOGISTIC REGRESSION (Bag of Words)")
-print(f1_score(y_train_clean, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
 
 ### TFIDF -> GMM -> Logistic Regression ###
 logr_tfidf_gmm_model_path = 'models/logr_tfidf_gmm_model'
@@ -164,7 +204,7 @@ else:
   print("** Logistic Regression model trained and saved to file **") 
 predictions = logr.predict(X_val_tfidf)
 print("LOGISTIC REGRESSION (TF-IDF + GMM)")
-print(f1_score(y_val, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
 
 ### Bag of Words -> GMM -> Logistic Regression ###
 logr_bag_gmm_model_path = 'models/logr_bag_gmm_model'
@@ -177,12 +217,34 @@ else:
   print("** Logistic Regression model trained and saved to file **") 
 predictions = logr.predict(X_val_bag)
 print("LOGISTIC REGRESSION (Bag of Words + GMM)")
-print(f1_score(y_val, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
 
 ### TFIDF -> KMEANS -> Logistic Regression ###
-pass
+logr_tfidf_kmeans_model_path = 'models/logr_tfidf_kmeans_model'
+if os.path.exists(logr_tfidf_kmeans_model_path): # load model
+  logr = load(logr_tfidf_kmeans_model_path)
+  print("** Logistic Regression model loaded from file **")
+else:
+  logr.fit(X_train_tfidf, y_train_tfidf_kmeans)
+  dump(logr, logr_tfidf_kmeans_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
+predictions = logr.predict(X_val_tfidf)
+print("LOGISTIC REGRESSION (TF-IDF + KMeans)")
+print(accuracy_score(y_val, predictions))
+
 ### Bag of Words -> KMEANS -> Logistic Regression ###
-pass
+logr_bag_kmeans_model_path = 'models/logr_bag_kmeans_model'
+if os.path.exists(logr_bag_kmeans_model_path): # load model
+  logr = load(logr_bag_kmeans_model_path)
+  print("** Logistic Regression model loaded from file **")
+else:
+  logr.fit(X_train_bag, y_train_bag_kmeans)
+  dump(logr, logr_bag_kmeans_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
+predictions = logr.predict(X_val_bag)
+print("LOGISTIC REGRESSION (Bag of Words + KMeans)")
+print(accuracy_score(y_val, predictions))
+
 print("** Logistic Regression Completed **")
 
 knn = KNN(n_neighbors=3) # KNN
@@ -196,9 +258,9 @@ else:
   knn.fit(X_train_clean_tfidf, y_train_clean)
   dump(knn, knn_tfidf_model_path)
   print("** KNN model trained and saved to file **")
-predictions = knn.predict(X_train_clean_tfidf)
+predictions = knn.predict(X_val_tfidf)
 print("KNN (TF-IDF)")
-print(f1_score(y_train_clean, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
 
 ### Bag of Words -> KNN ###
 knn_bag_model_path = 'models/knn_bag_model'
@@ -209,9 +271,9 @@ else:
   knn.fit(X_train_clean_bag, y_train_clean)
   dump(knn, knn_bag_model_path)
   print("** KNN model trained and saved to file **")
-predictions = knn.predict(X_train_clean_bag)
+predictions = knn.predict(X_val_bag)
 print("KNN (TF-IDF)")
-print(f1_score(y_train_clean, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
 
 ### TFIDF -> GMM -> KNN ###
 knn_tfidf_gmm_model_path = 'models/knn_tfidf_gmm_model'
@@ -224,7 +286,7 @@ else:
   print("** Logistic Regression model trained and saved to file **") 
 predictions = knn.predict(X_val_tfidf)
 print("KNN (TF-IDF + GMM)")
-print(f1_score(y_val, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
 
 ### Bag of Words -> GMM -> KNN ###
 knn_bag_gmm_model_path = 'models/knn_bag_gmm_model'
@@ -237,6 +299,32 @@ else:
   print("** KNN model trained and saved to file **") 
 predictions = knn.predict(X_val_bag)
 print("KNN (Bag of Words + GMM)")
-print(f1_score(y_val, predictions, average='weighted'))
+print(accuracy_score(y_val, predictions))
+
+### TFIDF -> KMeans -> KNN ###
+knn_tfidf_kmeans_model_path = 'models/knn_tfidf_kmeans_model'
+if os.path.exists(knn_tfidf_kmeans_model_path): # load model
+  knn = load(knn_tfidf_kmeans_model_path)
+  print("** KNN model loaded from file **")
+else:
+  knn.fit(X_train_tfidf, y_train_tfidf_kmeans)
+  dump(knn, knn_tfidf_kmeans_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
+predictions = knn.predict(X_val_tfidf)
+print("KNN (TF-IDF + KMeans)")
+print(accuracy_score(y_val, predictions))
+
+### Bag of Words -> KMeans -> KNN ###
+knn_bag_kmeans_model_path = 'models/knn_bag_kmeans_model'
+if os.path.exists(knn_bag_kmeans_model_path): # load model
+  knn = load(knn_bag_kmeans_model_path)
+  print("** KNN model loaded from file **")
+else:
+  knn.fit(X_train_bag, y_train_bag_kmeans)
+  dump(knn, knn_bag_kmeans_model_path)
+  print("** KNN model trained and saved to file **") 
+predictions = knn.predict(X_val_bag)
+print("KNN (Bag of Words + KMeans)")
+print(accuracy_score(y_val, predictions))
 
 print("** KNN Completed **")
