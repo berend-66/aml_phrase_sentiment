@@ -39,7 +39,7 @@ X_train_preprocess = X_train.apply(pre_processor.process)
 X_train_clean_preprocess = X_train_clean.apply(pre_processor.process)
 X_val_preprocess = X_val.apply(pre_processor.process)
 X_test_preprocess = X_test.apply(pre_processor.process)
-
+print("** Data Preprocessed **")
 combined_data = pd.concat([X_train_preprocess, X_val_preprocess, X_test_preprocess])
 bag = BagOfWords(combined_data) # Bag of Words
 
@@ -48,11 +48,11 @@ X_train_bag = bag.bag_of_words(X_train_preprocess, threshold_m=n)
 X_train_clean_bag = bag.bag_of_words(X_train_clean_preprocess, threshold_m=n)
 X_val_bag = bag.bag_of_words(X_val_preprocess, threshold_m=n)
 X_test_bag = bag.bag_of_words(X_test_preprocess, threshold_m=n)
-
+print("** Bag of Words Completed **")
 tfidf = TFIDF() # TF-IDF
 X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
 X_train_tfidf = tfidf.fit(X_train_preprocess)
-
+print("** TF-IDF Completed **")
 # pca = PrincipalComponentAnalysis(200) # Principle Component Analysis
 # X_train_bag_pca = pca.fit(X_train_bag)
 # pca.elbow_graph()
@@ -67,22 +67,32 @@ X_train_tfidf = tfidf.fit(X_train_preprocess)
 
 # --- Supervised Learning --- #
 
-logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced') # Logistic Regression
-### TFIDF -> Logistic Regression ###
-logr.fit(X_train_clean_tfidf, y_train_clean)
-predictions = logr.predict(X_train_clean_tfidf)
-print("LOGISTIC REGRESSION (TF-IDF)")
+# logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced') # Logistic Regression
+# ### TFIDF -> Logistic Regression ###
+# logr.fit(X_train_clean_tfidf, y_train_clean)
+# predictions = logr.predict(X_train_clean_tfidf)
+# print("LOGISTIC REGRESSION (TF-IDF)")
+# print(f1_score(y_train_clean, predictions, average='weighted'))
+# ### Bag of Words -> Logistic Regression ###
+# logr.fit(X_train_clean_bag, y_train_clean)
+# predictions = logr.predict(X_train_clean_bag)
+# print("LOGISTIC REGRESSION (Bag of Words)")
+# print(f1_score(y_train_clean, predictions, average='weighted'))
+# ### TFIDF -> GMM -> Logistic Regression ###
+# pass
+# ### Bag of Words -> GMM -> Logistic Regression ###
+# pass
+# ### TFIDF -> KMEANS -> Logistic Regression ###
+# pass
+# ### Bag of Words -> KMEANS -> Logistic Regression ###
+# pass
+print("** Logistic Regression Completed **")
+
+knn = KNN(n_neighbors=3) # KNN
+# TFIDF -> KNN
+knn.fit(X_train_clean_tfidf, y_train_clean)
+predictions = knn.predict(X_train_clean_tfidf)
+print("KNN (TF-IDF)")
 print(f1_score(y_train_clean, predictions, average='weighted'))
-### Bag of Words -> Logistic Regression ###
-logr.fit(X_train_clean_bag, y_train_clean)
-predictions = logr.predict(X_train_clean_bag)
-print("LOGISTIC REGRESSION (Bag of Words)")
-print(f1_score(y_train_clean, predictions, average='weighted'))
-### TFIDF -> GMM -> Logistic Regression ###
-pass
-### Bag of Words -> GMM -> Logistic Regression ###
-pass
-### TFIDF -> KMEANS -> Logistic Regression ###
-pass
-### Bag of Words -> KMEANS -> Logistic Regression ###
-pass
+
+print("** KNN Completed **")
