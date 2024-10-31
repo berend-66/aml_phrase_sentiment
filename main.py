@@ -75,6 +75,8 @@ print("** Bag of Words Completed **")
 tfidf = TFIDF() # TF-IDF
 X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
 X_train_tfidf = tfidf.fit(X_train_preprocess)
+X_val_tfidf = tfidf.fit(X_val_preprocess)
+X_test_tfidf = tfidf.fit(X_test_preprocess)
 print("** TF-IDF Completed **")
 
 # pca = PrincipalComponentAnalysis(200) # Principle Component Analysis
@@ -103,31 +105,84 @@ unlabeled_indices = np.where(y_train == -100)[0] # Indices of unlabeled data
 y_train_tfidf_gmm = y_train.copy()
 y_train_tfidf_gmm[unlabeled_indices] = labels[unlabeled_indices]
 
-### TFIDF -> GMM ###
+### Bag of Words -> GMM ###
+gmm_bag_model_path = 'models/gmm_bag_model.joblib'
+if os.path.exists(gmm_bag_model_path): # load model
+  gmm = load(gmm_bag_model_path)
+  print("** GMM model loaded from file **")
+else: # train model
+  gmm.fit(X_train_bag)
+  dump(gmm, gmm_bag_model_path)
+  print("** GMM model trained and saved to file **")
+
+labels = gmm.predict(X_train_bag).values.flatten()
+
+unlabeled_indices = np.where(y_train == -100)[0] # Indices of unlabeled data
+y_train_bag_gmm = y_train.copy()
+y_train_bag_gmm[unlabeled_indices] = labels[unlabeled_indices]
 
 print("** GMM Completed **")
 
 # --- Supervised Learning --- #
 
-# logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced') # Logistic Regression
-# ### TFIDF -> Logistic Regression ###
-# logr.fit(X_train_clean_tfidf, y_train_clean)
-# predictions = logr.predict(X_train_clean_tfidf)
-# print("LOGISTIC REGRESSION (TF-IDF)")
-# print(f1_score(y_train_clean, predictions, average='weighted'))
-# ### Bag of Words -> Logistic Regression ###
-# logr.fit(X_train_clean_bag, y_train_clean)
-# predictions = logr.predict(X_train_clean_bag)
-# print("LOGISTIC REGRESSION (Bag of Words)")
-# print(f1_score(y_train_clean, predictions, average='weighted'))
-# ### TFIDF -> GMM -> Logistic Regression ###
-# pass
-# ### Bag of Words -> GMM -> Logistic Regression ###
-# pass
-# ### TFIDF -> KMEANS -> Logistic Regression ###
-# pass
-# ### Bag of Words -> KMEANS -> Logistic Regression ###
-# pass
+logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced') # Logistic Regression
+
+### TFIDF -> Logistic Regression ###
+logr_tfidf_model_path = 'models/logr_tfidf_model'
+if os.path.exists(logr_tfidf_model_path): # load model
+  logr = load(logr_tfidf_model_path)
+  print("** Logistic Regression model loaded from file **")
+else:
+  logr.fit(X_train_clean_tfidf, y_train_clean)
+  dump(logr, logr_tfidf_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
+predictions = logr.predict(X_train_clean_tfidf)
+print("LOGISTIC REGRESSION (TF-IDF)")
+print(f1_score(y_train_clean, predictions, average='weighted'))
+
+### Bag of Words -> Logistic Regression ###
+logr_bag_model_path = 'models/logr_bag_model'
+if os.path.exists(logr_bag_model_path): # load model
+  logr = load(logr_bag_model_path)
+  print("** Logistic Regression model loaded from file **")
+else:
+  logr.fit(X_train_clean_bag, y_train_clean)
+  dump(logr, logr_bag_model_path)
+  print("** Logistic Regression model trained and saved to file **")
+predictions = logr.predict(X_train_clean_bag)
+print("LOGISTIC REGRESSION (Bag of Words)")
+print(f1_score(y_train_clean, predictions, average='weighted'))
+
+### TFIDF -> GMM -> Logistic Regression ###
+logr_tfidf_gmm_model_path = 'models/logr_tfidf_gmm_model'
+if os.path.exists(logr_tfidf_gmm_model_path): # load model
+  logr = load(logr_tfidf_gmm_model_path)
+  print("** Logistic Regression model loaded from file **")
+else:
+  logr.fit(X_train_tfidf, y_train_tfidf_gmm)
+  dump(logr, logr_tfidf_gmm_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
+predictions = logr.predict(X_val_tfidf)
+print("LOGISTIC REGRESSION (TF-IDF + GMM)")
+print(f1_score(y_val, predictions, average='weighted'))
+
+### Bag of Words -> GMM -> Logistic Regression ###
+logr_bag_gmm_model_path = 'models/logr_bag_gmm_model'
+if os.path.exists(logr_bag_gmm_model_path): # load model
+  logr = load(logr_bag_gmm_model_path)
+  print("** Logistic Regression model loaded from file **")
+else:
+  logr.fit(X_train_bag, y_train_bag_gmm)
+  dump(logr, logr_bag_gmm_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
+predictions = logr.predict(X_val_bag)
+print("LOGISTIC REGRESSION (Bag of Words + GMM)")
+print(f1_score(y_val, predictions, average='weighted'))
+
+### TFIDF -> KMEANS -> Logistic Regression ###
+pass
+### Bag of Words -> KMEANS -> Logistic Regression ###
+pass
 print("** Logistic Regression Completed **")
 
 knn = KNN(n_neighbors=3) # KNN
@@ -157,5 +212,31 @@ else:
 predictions = knn.predict(X_train_clean_bag)
 print("KNN (TF-IDF)")
 print(f1_score(y_train_clean, predictions, average='weighted'))
+
+### TFIDF -> GMM -> KNN ###
+knn_tfidf_gmm_model_path = 'models/knn_tfidf_gmm_model'
+if os.path.exists(knn_tfidf_gmm_model_path): # load model
+  knn = load(knn_tfidf_gmm_model_path)
+  print("** KNN model loaded from file **")
+else:
+  knn.fit(X_train_tfidf, y_train_tfidf_gmm)
+  dump(knn, knn_tfidf_gmm_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
+predictions = knn.predict(X_val_tfidf)
+print("KNN (TF-IDF + GMM)")
+print(f1_score(y_val, predictions, average='weighted'))
+
+### Bag of Words -> GMM -> KNN ###
+knn_bag_gmm_model_path = 'models/knn_bag_gmm_model'
+if os.path.exists(knn_bag_gmm_model_path): # load model
+  knn = load(knn_bag_gmm_model_path)
+  print("** KNN model loaded from file **")
+else:
+  knn.fit(X_train_bag, y_train_bag_gmm)
+  dump(knn, knn_bag_gmm_model_path)
+  print("** KNN model trained and saved to file **") 
+predictions = knn.predict(X_val_bag)
+print("KNN (Bag of Words + GMM)")
+print(f1_score(y_val, predictions, average='weighted'))
 
 print("** KNN Completed **")
