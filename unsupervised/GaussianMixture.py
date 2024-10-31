@@ -14,7 +14,7 @@ class GaussianMixture:
   def predict(self, X):
     """Predict cluster labels for each data point and return as a pandas DataFrame."""
     labels = self.model.predict(X)
-    labels_df = pd.DataFrame(labels, columns=["Predicted Cluster"])
+    labels_df = pd.DataFrame(labels)
     return labels_df
 
   def predict_proba(self, X):

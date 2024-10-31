@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from IPython.display import display
 from sklearn.metrics import mean_squared_error, r2_score, f1_score
+from joblib import dump, load
 
 # import classes
 from preprocessing.PrincipalComponentAnalysis import PrincipalComponentAnalysis
@@ -85,13 +86,25 @@ print("** TF-IDF Completed **")
 
 # --- Unsupervised Learning ---
 gmm = GaussianMixture(n_components=5, random_state=42) # Gaussian Mixture
+
 ### TFIDF -> GMM ###
-gmm.fit(X_train_tfidf)
-labels = gmm.predict(X_train_tfidf)
-display(labels, labels.shape)
-unlabeled_indices = np.where(y_train == -100)[0]  # Indices of unlabeled data
-y_train_tfidf_gmm = y_train.copy()  # Copy of original labels
+gmm_tfidf_model_path = 'models/gmm_tfidf_model.joblib'
+if os.path.exists(gmm_tfidf_model_path): # load model
+  gmm = load(gmm_tfidf_model_path)
+  print("** GMM model loaded from file **")
+else: # train model
+  gmm.fit(X_train_tfidf)
+  dump(gmm, gmm_tfidf_model_path)
+  print("** GMM model trained and saved to file **")
+
+labels = gmm.predict(X_train_tfidf).values.flatten()
+
+unlabeled_indices = np.where(y_train == -100)[0] # Indices of unlabeled data
+y_train_tfidf_gmm = y_train.copy()
 y_train_tfidf_gmm[unlabeled_indices] = labels[unlabeled_indices]
+
+### TFIDF -> GMM ###
+
 print("** GMM Completed **")
 
 # --- Supervised Learning --- #
@@ -118,15 +131,31 @@ print("** GMM Completed **")
 print("** Logistic Regression Completed **")
 
 knn = KNN(n_neighbors=3) # KNN
+
 ### TFIDF -> KNN ###
-knn.fit(X_train_clean_tfidf, y_train_clean)
+knn_tfidf_model_path = 'models/knn_tfidf_model'
+if os.path.exists(knn_tfidf_model_path): # load model
+  knn = load(knn_tfidf_model_path)
+  print("** KNN model loaded from file **")
+else:
+  knn.fit(X_train_clean_tfidf, y_train_clean)
+  dump(knn, knn_tfidf_model_path)
+  print("** KNN model trained and saved to file **")
 predictions = knn.predict(X_train_clean_tfidf)
 print("KNN (TF-IDF)")
 print(f1_score(y_train_clean, predictions, average='weighted'))
-### TFIDF -> KNN ###
-knn.fit(X_train_clean_bag, y_train_clean)
+
+### Bag of Words -> KNN ###
+knn_bag_model_path = 'models/knn_bag_model'
+if os.path.exists(knn_bag_model_path): # load model
+  knn = load(knn_bag_model_path)
+  print("** KNN model loaded from file **")
+else:
+  knn.fit(X_train_clean_bag, y_train_clean)
+  dump(knn, knn_bag_model_path)
+  print("** KNN model trained and saved to file **")
 predictions = knn.predict(X_train_clean_bag)
-print("KNN (Bag of Words)")
+print("KNN (TF-IDF)")
 print(f1_score(y_train_clean, predictions, average='weighted'))
 
 print("** KNN Completed **")
