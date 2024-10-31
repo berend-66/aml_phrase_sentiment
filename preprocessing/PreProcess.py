@@ -1,121 +1,113 @@
 import string
 import nltk
 from nltk.corpus import stopwords
-from nltk.corpus import wordnet as wn
+from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer, PorterStemmer
 import re
+import contractions
 
 nltk.download('stopwords')
 nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger_eng')
+
+# removing stop words
+stop_words = set(stopwords.words('english'))
+
+# Define negation words to exclude from stopwords
+negation_words = {'no', 'not', 'nor', 'never', "n't"}
+
+# Remove negation words from the stopwords set
+stop_words = stop_words.difference(negation_words)
+
+lemmatizer = WordNetLemmatizer()
 
 class PreProcess:
-  def process(self, data):
-    preprocess_data = data.copy()
-    preprocess_data = preprocess_data.str.lower() # lowercase letters
+  def get_wordnet_pos(self, word):
+    """
+    Map POS tag to WordNet POS
+    Using nltk.stem.WordNetLemmatizer without specifying the part of speech (POS) defaults to treating 
+    all words as nouns.
+    Accuracy: Without POS tagging, lemmatization may not reduce words to their correct root forms, 
+    Leading to less effective normalization.
+    Context Awareness: POS tagging allows the lemmatizer to understand the role of each word in a sentence, ensuring that verbs, nouns,
+    adjectives, and adverbs are lemmatized appropriately.
+    """
+    # Get the POS tag for the word
+    tag = nltk.pos_tag([word])[0][1][0].upper()
+    # Map NLTK POS tags to WordNet POS tags
+    tag_dict = {
+        'J': wordnet.ADJ,
+        'N': wordnet.NOUN,
+        'V': wordnet.VERB,
+        'R': wordnet.ADV
+    }
+    # Return the corresponding WordNet POS tag or default to Noun
+    return tag_dict.get(tag, wordnet.NOUN)
 
-    preprocess_data = preprocess_data.replace(r'@\w+|http\S+', '', regex=True) # replace @ and https
+  def expand_contractions(self, text):
+    return contractions.fix(text)
 
-    punctuation = string.punctuation # remove punctuation
-    mapping = str.maketrans("", "", punctuation)
-    preprocess_data = preprocess_data.str.translate(mapping)
+  def to_lowercase(self, text):
+    return text.lower()
 
-    stop_words = set(stopwords.words('english')) # remove stopwords
-    preprocess_data = preprocess_data.apply(lambda text: ' '.join([word for word in str(text).split() if word.lower() not in stop_words]))
+  def remove_urls(self, text):
+    # Remove URLs
+    return re.sub(r"http\S+|www\S+|https\S+", '', text)
 
-    lemmatizer = WordNetLemmatizer() # lemmatize
-    preprocess_data = preprocess_data.apply(lambda text: ' '.join([lemmatizer.lemmatize(word) for word in text.split()]))
-    preprocess_data = preprocess_data.apply(lambda text: re.sub(r'@\w+', '', re.sub(r'http\S+|www\S+', '', text)))
+  def lemmatize_text(self, text):
+    # Tokenize text while preserving @mentions and #hashtags as single tokens
+    tokens = re.findall(r'@\w+|#\w+|\w+', text)
+    lemmatized = [lemmatizer.lemmatize(w, self.get_wordnet_pos(w)) for w in tokens]
+    return ' '.join(lemmatized)
 
-    return preprocess_data
+  def remove_punctuation(self, text):
+    '''
+    Model may be improved by preventing removal of characters #disaster? or #disaster!
+    and ? or ! in general, see end of document for edited function
+    
+    '''
+    # Remove punctuation except for words \w, white spaces \s, mentions (@) and #
+    return re.sub(r"[^\w\s@#]|[\d_]", '', text)
 
+  def remove_stopwords(self, text):
+    # Tokenize text while preserving @mentions and #hashtags as single tokens
+    tokens = re.findall(r'@\w+|#\w+|\w+', text)
+    filtered = [word for word in tokens if word.lower() not in stop_words]
+    return ' '.join(filtered)
 
-  def clean(self, text):
-    text = re.sub(r'^https?:\/\/.*[\r\n]*', '', str(text), flags=re.MULTILINE)
-    texter = re.sub(r"<br />", " ", text)
-    texter = re.sub(r"&quot;", "\"",texter)
-    texter = re.sub('&#39;', "\"", texter)
-    texter = re.sub('\n', " ", texter)
-    texter = re.sub(' u '," you ", texter)
-    texter = re.sub('`',"", texter)
-    texter = re.sub(' +', ' ', texter)
-    texter = re.sub(r"(!)\1+", r"!", texter)
-    texter = re.sub(r"(\?)\1+", r"?", texter)
-    texter = re.sub('&amp;', 'and', texter)
-    texter = re.sub('\r', ' ',texter)
-    #added substitutions
+  def remove_non_ascii(self, text):
+    """
+    Removes non-ASCII characters from the text.
+    """
+    return re.sub(r'[^\x00-\x7F]+', '', text)
 
-    #***********added substitutions***********
-    # remove all the special characters
-    texter = re.sub(r'\W', ' ', texter)
-    # remove all single characters
-    texter = re.sub(r'\s+[a-zA-Z]\s+', ' ', texter)
-    # Remove single characters from the start
-    texter = re.sub(r'\^[a-zA-Z]\s+', ' ', texter)
-    # Remove numbers
-    texter = re.sub(r'\d+', ' ', texter)
-    # Converting to Lowercase
-    texter = texter.lower()
-    # Remove punctuation
-    texter = re.sub(r'[^\w\s]', ' ', texter)
-    # Remove parentheses
-    texter = re.sub(r'\([^)]*\)', ' ', texter)
-    # Remove single quotes
-    texter = re.sub(r'\'', ' ', texter)
-    # Substituting multiple spaces with single space
-    texter = re.sub(r'\s+', ' ', texter, flags=re.I)
-
-    clean = re.compile('<.*?>')
-    texter = texter.encode('ascii', 'ignore').decode('ascii')
-    texter = re.sub(clean, '', texter)
-    if texter == "":
-        texter = ""
-    return texter
-
-  def clean_dataset(self, dataset):
-    for row in range(dataset.shape[0]):
-        dataset[row,0] = clean(dataset[row,0])
-    return dataset
-
-  def tokenize_lexicon(self, texts):
-    return_texts = []
-    for i in range(len(texts)):
-        return_texts.append(nltk.word_tokenize(texts[i]))
-        return_texts[i] = nltk.pos_tag(return_texts[i])
-    return return_texts
-
-  def get_wordnet_pos(self, pos_tag):
-    if pos_tag.startswith('J'):
-        return wn.ADJ
-    elif pos_tag.startswith('V'):
-        return wn.VERB
-    elif pos_tag.startswith('N'):
-        return wn.NOUN
-    elif pos_tag.startswith('R'):
-        return wn.ADV
-    else:
-        return wn.NOUN
-
-  def lemmatize_texts(self, texts):
-    return_texts = []
-    lemmer = nltk.stem.WordNetLemmatizer()
-    for i in range(len(texts)):
-        return_texts.append([])
-        for j in range(len(texts[i])):
-                return_texts[i].append(lemmer.lemmatize(texts[i][j][0], pos=get_wordnet_pos(texts[i][j][1])))
-    return return_texts
-
-  def stem_texts(self, texts):
-    return_texts = []
-    ps = PorterStemmer()
-    for i in range(len(texts)):
-        return_texts.append([])
-        for j in range(len(texts[i])):
-                return_texts[i].append(ps.stem(texts[i][j][0]))
-    return return_texts
-
-
-  def backtostring(self, texts):
-    return_texts = []
-    for i in range(len(texts)):
-        return_texts.append(" ".join(texts[i]))
-    return return_texts
+  def process(self, text):
+    # Check if the input is a string, if not, return an empty string or convert to string
+    if not isinstance(text, str):
+        return ""
+    
+    # Expand contractions (e.g., "can't" -> "cannot")
+    text = self.expand_contractions(text)
+    
+    # Convert to lowercase
+    text = self.to_lowercase(text)
+    
+    # Remove URLs
+    text = self.remove_urls(text)
+    
+    # Remove non-ASCII characters
+    text = self.remove_non_ascii(text)
+    
+    # Remove punctuation except for hashtags (#) and (@)
+    text = self.remove_punctuation(text)
+    
+    # Optionally, replace mentions with '@user' 
+    # text = re.sub(r'@\w+', '@user', text)
+    
+    # Remove stopwords while preserving negations
+    text = self.remove_stopwords(text)
+    
+    # Lemmatize words with appropriate POS tagging
+    text = self.lemmatize_text(text)
+    
+    return text

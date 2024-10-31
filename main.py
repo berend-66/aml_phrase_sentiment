@@ -9,9 +9,8 @@ from preprocessing.PreProcess import PreProcess
 from preprocessing.BagOfWords import BagOfWords
 from preprocessing.TFIDF import TFIDF
 
-from unsupervised.GaussianMixture import GaussianMixture
-
-from supervised.LinearRegression import LinearRegression
+from supervised.LogisticRegression import LogisticRegression
+from supervised.KNN import KNN
 
 train_data = pd.read_csv('data/train.csv')
 val_data = pd.read_csv('data/val.csv')
@@ -33,23 +32,18 @@ y_val = val_data['Sentiment']
 # Test Data
 X_test = test_data['Phrase']
 
-# print(f"Train Data Shape: {X_train.shape}")
-# print(f"Cleaned Train Data Shape: {train_data_clean['Phrase'].shape}")
-# print(f"Validation Data Shape: {X_val.shape}")
-# print(f"Test Data Shape: {X_test.shape}")
-
 # --- Preprocessing Data ---
 pre_processor = PreProcess()
 
-X_train_preprocess = pre_processor.process(X_train)
-X_train_clean_preprocess = pre_processor.process(X_train_clean)
-X_val_preprocess = pre_processor.process(X_val)
-X_test_preprocess = pre_processor.process(X_test)
+X_train_preprocess = X_train.apply(pre_processor.process)
+X_train_clean_preprocess = X_train_clean.apply(pre_processor.process)
+X_val_preprocess = X_val.apply(pre_processor.process)
+X_test_preprocess = X_test.apply(pre_processor.process)
 
 combined_data = pd.concat([X_train_preprocess, X_val_preprocess, X_test_preprocess])
 bag = BagOfWords(combined_data) # Bag of Words
 
-n = 3000
+n = 1000
 X_train_bag = bag.bag_of_words(X_train_preprocess, threshold_m=n)
 X_train_clean_bag = bag.bag_of_words(X_train_clean_preprocess, threshold_m=n)
 X_val_bag = bag.bag_of_words(X_val_preprocess, threshold_m=n)
@@ -59,20 +53,36 @@ tfidf = TFIDF() # TF-IDF
 X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
 X_train_tfidf = tfidf.fit(X_train_preprocess)
 
-pca = PrincipalComponentAnalysis(125) # Principle Component Analysis
-X_train_bag_pca = pca.fit(X_train_bag)
-X_train_clean_bag_pca = pca.fit(X_train_clean_bag)
-X_train_tfidf_pca = pca.fit(X_train_tfidf)
-X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
+# pca = PrincipalComponentAnalysis(200) # Principle Component Analysis
+# X_train_bag_pca = pca.fit(X_train_bag)
+# pca.elbow_graph()
+# X_train_clean_bag_pca = pca.fit(X_train_clean_bag)
+# X_train_tfidf_pca = pca.fit(X_train_tfidf)
+# X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
 
 # --- Unsupervised Learning ---
-gm = GaussianMixture(2) # Gaussian Mixture
-gm.fit(X_train_clean_tfidf_pca)
-predictions = gm.predict(X_train_clean_tfidf_pca)
+# gm = GaussianMixture(2) # Gaussian Mixture
+# gm.fit(X_train_clean_tfidf_pca)
+# predictions = gm.predict(X_train_clean_tfidf_pca)
 
-# --- Supervised Learning ---
-lr = LinearRegression() # Linear Regression
-lr.fit(X_train_clean_bag_pca, y_train_clean)
-predictions = lr.predict(X_train_clean_bag_pca)
-print("LINEAR REGRESSION")
+# --- Supervised Learning --- #
+
+logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced') # Logistic Regression
+### TFIDF -> Logistic Regression ###
+logr.fit(X_train_clean_tfidf, y_train_clean)
+predictions = logr.predict(X_train_clean_tfidf)
+print("LOGISTIC REGRESSION (TF-IDF)")
 print(f1_score(y_train_clean, predictions, average='weighted'))
+### Bag of Words -> Logistic Regression ###
+logr.fit(X_train_clean_bag, y_train_clean)
+predictions = logr.predict(X_train_clean_bag)
+print("LOGISTIC REGRESSION (Bag of Words)")
+print(f1_score(y_train_clean, predictions, average='weighted'))
+### TFIDF -> GMM -> Logistic Regression ###
+pass
+### Bag of Words -> GMM -> Logistic Regression ###
+pass
+### TFIDF -> KMEANS -> Logistic Regression ###
+pass
+### Bag of Words -> KMEANS -> Logistic Regression ###
+pass
