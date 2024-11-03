@@ -79,18 +79,22 @@ X_val_bag = bag.bag_of_words(X_val_preprocess, threshold_m=n)
 X_test_bag = bag.bag_of_words(X_test_preprocess, threshold_m=n)
 print("** Bag of Words Completed **")
 tfidf = TFIDF() # TF-IDF
+# tfidf.find_optimal_params(X_train_clean_preprocess, y_train_clean)
 X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
 X_train_tfidf = tfidf.fit(X_train_preprocess)
 X_val_tfidf = tfidf.fit(X_val_preprocess)
 X_test_tfidf = tfidf.fit(X_test_preprocess)
 print("** TF-IDF Completed **")
 
-# pca = PrincipalComponentAnalysis(200) # Principle Component Analysis
-# X_train_bag_pca = pca.fit(X_train_bag)
+pca = PrincipalComponentAnalysis(50) # Principle Component Analysis
+X_train_bag_pca = pca.fit(X_train_bag)
 # pca.elbow_graph()
-# X_train_clean_bag_pca = pca.fit(X_train_clean_bag)
-# X_train_tfidf_pca = pca.fit(X_train_tfidf)
+X_train_bag_pca = pca.fit(X_train_bag)
+X_val_bag_pca = pca.fit(X_val_bag)
+X_train_tfidf_pca = pca.fit(X_train_tfidf)
+X_val_tfidf_pca = pca.fit(X_val_tfidf)
 # X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
+print("** PCA Completed **")
 
 # --- Unsupervised Learning ---
 gmm = GaussianMixture(n_components=5, random_state=42) # Gaussian Mixture
@@ -101,11 +105,11 @@ if os.path.exists(gmm_tfidf_model_path): # load model
   gmm = load(gmm_tfidf_model_path)
   print("** GMM model loaded from file **")
 else: # train model
-  gmm.fit(X_train_tfidf)
+  gmm.fit(X_train_tfidf_pca)
   dump(gmm, gmm_tfidf_model_path)
   print("** GMM model trained and saved to file **")
 
-labels = gmm.predict(X_train_tfidf).values.flatten()
+labels = gmm.predict(X_train_tfidf_pca).values.flatten()
 
 unlabeled_indices = np.where(y_train == -100)[0] # Indices of unlabeled data
 y_train_tfidf_gmm = y_train.copy()
@@ -117,11 +121,11 @@ if os.path.exists(gmm_bag_model_path): # load model
   gmm = load(gmm_bag_model_path)
   print("** GMM model loaded from file **")
 else: # train model
-  gmm.fit(X_train_bag)
+  gmm.fit(X_train_bag_pca)
   dump(gmm, gmm_bag_model_path)
   print("** GMM model trained and saved to file **")
 
-labels = gmm.predict(X_train_bag).values.flatten()
+labels = gmm.predict(X_train_bag_pca).values.flatten()
 
 unlabeled_indices = np.where(y_train == -100)[0] # Indices of unlabeled data
 y_train_bag_gmm = y_train.copy()
@@ -199,10 +203,10 @@ if os.path.exists(logr_tfidf_gmm_model_path): # load model
   logr = load(logr_tfidf_gmm_model_path)
   print("** Logistic Regression model loaded from file **")
 else:
-  logr.fit(X_train_tfidf, y_train_tfidf_gmm)
+  logr.fit(X_train_tfidf_pca, y_train_tfidf_gmm)
   dump(logr, logr_tfidf_gmm_model_path)
   print("** Logistic Regression model trained and saved to file **") 
-predictions = logr.predict(X_val_tfidf)
+predictions = logr.predict(X_val_tfidf_pca)
 print("LOGISTIC REGRESSION (TF-IDF + GMM)")
 print(accuracy_score(y_val, predictions))
 
@@ -212,10 +216,10 @@ if os.path.exists(logr_bag_gmm_model_path): # load model
   logr = load(logr_bag_gmm_model_path)
   print("** Logistic Regression model loaded from file **")
 else:
-  logr.fit(X_train_bag, y_train_bag_gmm)
+  logr.fit(X_train_bag_pca, y_train_bag_gmm)
   dump(logr, logr_bag_gmm_model_path)
   print("** Logistic Regression model trained and saved to file **") 
-predictions = logr.predict(X_val_bag)
+predictions = logr.predict(X_val_bag_pca)
 print("LOGISTIC REGRESSION (Bag of Words + GMM)")
 print(accuracy_score(y_val, predictions))
 
@@ -281,10 +285,10 @@ if os.path.exists(knn_tfidf_gmm_model_path): # load model
   knn = load(knn_tfidf_gmm_model_path)
   print("** KNN model loaded from file **")
 else:
-  knn.fit(X_train_tfidf, y_train_tfidf_gmm)
+  knn.fit(X_train_tfidf_pca, y_train_tfidf_gmm)
   dump(knn, knn_tfidf_gmm_model_path)
   print("** Logistic Regression model trained and saved to file **") 
-predictions = knn.predict(X_val_tfidf)
+predictions = knn.predict(X_val_tfidf_pca)
 print("KNN (TF-IDF + GMM)")
 print(accuracy_score(y_val, predictions))
 
@@ -294,10 +298,10 @@ if os.path.exists(knn_bag_gmm_model_path): # load model
   knn = load(knn_bag_gmm_model_path)
   print("** KNN model loaded from file **")
 else:
-  knn.fit(X_train_bag, y_train_bag_gmm)
+  knn.fit(X_train_bag_pca, y_train_bag_gmm)
   dump(knn, knn_bag_gmm_model_path)
   print("** KNN model trained and saved to file **") 
-predictions = knn.predict(X_val_bag)
+predictions = knn.predict(X_val_bag_pca)
 print("KNN (Bag of Words + GMM)")
 print(accuracy_score(y_val, predictions))
 

@@ -1,0 +1,14 @@
+# Ignore all files in the model folder
+models/*
+
+# Allow specific file types in model folder if needed
+# Uncomment and specify file types to include them
+# !model/*.h5
+# !model/*.pkl
+# !model/*.json
+
+# Ignore all subdirectories in model
+models/**/
+
+# If you want to allow a specific subfolder, uncomment and replace "subfolder_name" below
+# !model/subfolder_name/
