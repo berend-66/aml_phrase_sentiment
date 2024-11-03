@@ -32,6 +32,9 @@ class PrincipalComponentAnalysis:
     X_pca = self.pca.fit_transform(X_standardized)  # Apply dimensionality reduction
     return X_pca
 
+  def transform(self, X):
+    return self.pca.transform(X)
+
   def explained_variance(self):
     """Returns the explained variance ratio of the PCA components."""
     return self.pca.explained_variance_ratio_

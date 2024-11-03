@@ -80,20 +80,21 @@ X_test_bag = bag.bag_of_words(X_test_preprocess, threshold_m=n)
 print("** Bag of Words Completed **")
 tfidf = TFIDF() # TF-IDF
 # tfidf.find_optimal_params(X_train_clean_preprocess, y_train_clean)
-X_train_clean_tfidf = tfidf.fit(X_train_clean_preprocess)
 X_train_tfidf = tfidf.fit(X_train_preprocess)
-X_val_tfidf = tfidf.fit(X_val_preprocess)
-X_test_tfidf = tfidf.fit(X_test_preprocess)
+X_train_clean_tfidf = X_train_tfidf[mask]
+print(X_train_tfidf)
+X_val_tfidf = tfidf.transform(X_val_preprocess)
+print(X_val_tfidf)
+X_test_tfidf = tfidf.transform(X_test_preprocess)
 print("** TF-IDF Completed **")
 
 pca = PrincipalComponentAnalysis(50) # Principle Component Analysis
-X_train_bag_pca = pca.fit(X_train_bag)
-# pca.elbow_graph()
-X_train_bag_pca = pca.fit(X_train_bag)
-X_val_bag_pca = pca.fit(X_val_bag)
-X_train_tfidf_pca = pca.fit(X_train_tfidf)
-X_val_tfidf_pca = pca.fit(X_val_tfidf)
+X_train_bag_pca = pca.fit(X_train_bag) # Bag
+X_val_bag_pca = pca.transform(X_val_bag)
+X_train_tfidf_pca = pca.fit(X_train_tfidf) # TFIDF
+X_val_tfidf_pca = pca.transform(X_val_tfidf)
 # X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
+# pca.elbow_graph()
 print("** PCA Completed **")
 
 # --- Unsupervised Learning ---
@@ -169,7 +170,7 @@ y_train_bag_kmeans[unlabeled_indices] = labels[unlabeled_indices]
 
 # --- Supervised Learning --- #
 
-logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced') # Logistic Regression
+logr = LogisticRegression(max_iter=1000, random_state=42, class_weight='balanced', solver="saga", penalty="l2") # Logistic Regression
 
 ### TFIDF -> Logistic Regression ###
 logr_tfidf_model_path = 'models/logr_tfidf_model'
@@ -182,6 +183,19 @@ else:
   print("** Logistic Regression model trained and saved to file **") 
 predictions = logr.predict(X_val_tfidf)
 print("LOGISTIC REGRESSION (TF-IDF)")
+print(accuracy_score(y_val, predictions))
+
+### TFIDF -> LogR Labels -> Logistic Regression
+unlabeled_indices = np.where(y_train == -100)[0]
+
+labels = logr.predict(X_train_tfidf).values.flatten()
+y_train_new = y_train.copy()
+y_train_new[unlabeled_indices] = labels[unlabeled_indices]
+
+logr.fit(X_train_tfidf, y_train_new)
+predictions = logr.predict(X_val_tfidf)
+
+print("LOGISTIC REGRESSION x2 (TF-IDF)")
 print(accuracy_score(y_val, predictions))
 
 ### Bag of Words -> Logistic Regression ###

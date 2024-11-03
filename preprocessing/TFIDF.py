@@ -5,6 +5,16 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
 class TFIDF:
+  def __init__(self):
+    self.tfidf_vectorizer = TfidfVectorizer(
+      max_features=5000,            # Limit to the top 1000 features
+      ngram_range=(1, 2),           # Include unigrams and bigrams
+      min_df=1,                     # Ignore terms that appear in fewer than 3 documents
+      max_df=0.7,                   # Ignore terms that appear in more than 90% of the documents
+      stop_words='english',         # Use English stopwords
+      use_idf=True                  # Use inverse document frequency
+    )
+
   def find_optimal_params(self, X, y):
     # Define the pipeline with TF-IDF and logistic regression
     pipeline = Pipeline([
@@ -32,16 +42,9 @@ class TFIDF:
 
   def fit(self, data):
     # Initialize the TF-IDF vectorizer with tunable parameters ---> Tune on validation set using grid search
-    tfidf_vectorizer = TfidfVectorizer(
-      max_features=5000,            # Limit to the top 1000 features
-      ngram_range=(1, 1),           # Include unigrams and bigrams
-      min_df=1,                     # Ignore terms that appear in fewer than 3 documents
-      max_df=0.7,                   # Ignore terms that appear in more than 90% of the documents
-      stop_words='english',         # Use English stopwords
-      sublinear_tf=False,           # Apply sublinear scaling to term frequency
-      use_idf=True                  # Use inverse document frequency
-    )
+    tfidf_matrix = self.tfidf_vectorizer.fit_transform(data)
 
-    tfidf_matrix = tfidf_vectorizer.fit_transform(data)
+    return pd.DataFrame(tfidf_matrix.toarray(), columns=self.tfidf_vectorizer.get_feature_names_out())
 
-    return pd.DataFrame(tfidf_matrix.toarray(), columns=tfidf_vectorizer.get_feature_names_out())
+  def transform(self, data):
+    tfidf_ma
