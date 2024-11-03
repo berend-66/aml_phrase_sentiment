@@ -47,4 +47,5 @@ class TFIDF:
     return pd.DataFrame(tfidf_matrix.toarray(), columns=self.tfidf_vectorizer.get_feature_names_out())
 
   def transform(self, data):
-    tfidf_ma
+    tfidf_matrix = self.tfidf_vectorizer.transform(data)
+    return pd.DataFrame(tfidf_matrix.toarray(), columns=self.tfidf_vectorizer.get_feature_names_out())

@@ -78,28 +78,30 @@ X_train_clean_bag = bag.bag_of_words(X_train_clean_preprocess, threshold_m=n)
 X_val_bag = bag.bag_of_words(X_val_preprocess, threshold_m=n)
 X_test_bag = bag.bag_of_words(X_test_preprocess, threshold_m=n)
 print("** Bag of Words Completed **")
+
 tfidf = TFIDF() # TF-IDF
-# tfidf.find_optimal_params(X_train_clean_preprocess, y_train_clean)
+# tfidf.find_optimal_params(X_train_clean_preprocess, y_train_clean) # Finds optimal hyperparameters
 X_train_tfidf = tfidf.fit(X_train_preprocess)
 X_train_clean_tfidf = X_train_tfidf[mask]
-print(X_train_tfidf)
 X_val_tfidf = tfidf.transform(X_val_preprocess)
-print(X_val_tfidf)
 X_test_tfidf = tfidf.transform(X_test_preprocess)
 print("** TF-IDF Completed **")
 
-pca = PrincipalComponentAnalysis(50) # Principle Component Analysis
-X_train_bag_pca = pca.fit(X_train_bag) # Bag
-X_val_bag_pca = pca.transform(X_val_bag)
-X_train_tfidf_pca = pca.fit(X_train_tfidf) # TFIDF
-X_val_tfidf_pca = pca.transform(X_val_tfidf)
+pca_bag = PrincipalComponentAnalysis(50) # Principle Component Analysis
+X_train_bag_pca = pca_bag.fit(X_train_bag) # Bag
+X_val_bag_pca = pca_bag.transform(X_val_bag)
+
+pca_tfidf = PrincipalComponentAnalysis(50)
+X_train_tfidf_pca = pca_bag.fit(X_train_tfidf) # TFIDF
+X_val_tfidf_pca = pca_bag.transform(X_val_tfidf)
+
 # X_train_clean_tfidf_pca = pca.fit(X_train_clean_tfidf)
-# pca.elbow_graph()
+# pca.elbow_graph() # Shows optimal PCA
 print("** PCA Completed **")
 
 # --- Unsupervised Learning ---
-gmm = GaussianMixture(n_components=5, random_state=42) # Gaussian Mixture
-
+gmm = GaussianMixture(n_components=5, random_state=42, init_params="kmeans", max_iter=50, tol=0.0001) # Gaussian Mixture
+# gmm.find_optimal_params(X_train_tfidf_pca)
 ### TFIDF -> GMM ###
 gmm_tfidf_model_path = 'models/gmm_tfidf_model.joblib'
 if os.path.exists(gmm_tfidf_model_path): # load model
@@ -134,7 +136,7 @@ y_train_bag_gmm[unlabeled_indices] = labels[unlabeled_indices]
 
 print("** GMM Completed **")
 
-kmeans = KMeans(n_clusters=5, random_state=0) # K-Means
+kmeans = KMeans(n_clusters=5, random_state=42) # K-Means
 
 ### TF-IDF -> KMeans ###
 kmeans_tfidf_model_path = 'models/kmeans_tfidf_model.joblib'
@@ -192,9 +194,15 @@ labels = logr.predict(X_train_tfidf).values.flatten()
 y_train_new = y_train.copy()
 y_train_new[unlabeled_indices] = labels[unlabeled_indices]
 
-logr.fit(X_train_tfidf, y_train_new)
+logr2_model_path = 'models/llogr2_model'
+if os.path.exists(logr2_model_path): # load model
+  logr = load(logr2_model_path)
+  print("** Logistic Regression model loaded from file **")
+else:
+  logr.fit(X_train_tfidf, y_train_new)
+  dump(logr, logr2_model_path)
+  print("** Logistic Regression model trained and saved to file **") 
 predictions = logr.predict(X_val_tfidf)
-
 print("LOGISTIC REGRESSION x2 (TF-IDF)")
 print(accuracy_score(y_val, predictions))
 

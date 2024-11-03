@@ -24,7 +24,7 @@ class PrincipalComponentAnalysis:
   def __init__(self, n_components):  # n_components: number of features to reduce to
     self.n_components = n_components
     self.scaler = StandardScaler()  # Instantiate StandardScaler
-    self.pca = PCA(n_components=n_components)
+    self.pca = PCA(n_components=n_components, random_state=42)
 
   def fit_transform(self, X):
     """Standardizes the data and applies PCA transformation."""
