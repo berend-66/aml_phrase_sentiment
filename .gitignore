@@ -1,5 +1,6 @@
 # Ignore all files in the model folder
 models/*
+.DS_Store
 
 # Allow specific file types in model folder if needed
 # Uncomment and specify file types to include them
