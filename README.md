@@ -8,5 +8,5 @@ The data is a mixture of labeled and unlabeled phrases from movie reviews. Each 
 - K Nearest Neighbor (KNN)
 - Gaussian Mixture (GMM)
 - K-means Clustering
-### Intrstructions
+### Instructions
 To build and test each model, download all dependencies and execute main.py
